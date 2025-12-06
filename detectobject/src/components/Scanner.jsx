@@ -14,20 +14,30 @@ const Scanner = ({ setPage }) => {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter((d) => d.kind === "videoinput");
 
-        // Try to find a back/rear camera
-        let backCameraId = null;
+        let selectedCameraId = null;
+
+        // First, try to find a rear/back camera
         for (let device of videoDevices) {
-          if (device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear")) {
-            backCameraId = device.deviceId;
+          const label = device.label.toLowerCase();
+          if (label.includes("back") || label.includes("rear")) {
+            selectedCameraId = device.deviceId;
             break;
           }
         }
 
-        // Get media stream
+        // If no rear camera found, pick the first device that doesn't mention "front"
+        if (!selectedCameraId) {
+          const nonFront = videoDevices.find((d) => !d.label.toLowerCase().includes("front"));
+          selectedCameraId = nonFront ? nonFront.deviceId : null;
+        }
+
+        // If still nothing, fallback to environment facing mode
+        const videoConstraints = selectedCameraId
+          ? { deviceId: { exact: selectedCameraId }, width: { ideal: 640 }, height: { ideal: 480 } }
+          : { facingMode: { exact: "environment" }, width: { ideal: 640 }, height: { ideal: 480 } };
+
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: backCameraId
-            ? { deviceId: { exact: backCameraId }, width: { ideal: 640 }, height: { ideal: 480 } }
-            : { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
+          video: videoConstraints,
         });
 
         videoRef.current.srcObject = stream;
@@ -69,9 +79,9 @@ const Scanner = ({ setPage }) => {
 
       // Redirect based on detection
       if (data.detected === 0) setPage("capacitor");
-      if (data.detected === 1) setPage("resistor");
-      if (data.detected === 2) setPage("transducer");
-      if (data.detected === -1) alert("No object detected. Try again.");
+      else if (data.detected === 1) setPage("resistor");
+      else if (data.detected === 2) setPage("transducer");
+      else if (data.detected === -1) alert("No object detected. Try again.");
     } catch (err) {
       console.error("Error:", err);
       alert("Error sending frame to backend");
@@ -81,7 +91,7 @@ const Scanner = ({ setPage }) => {
   };
 
   return (
-    <div className="scanner-container">
+    <div className="scanner-container" style={{ textAlign: "center", padding: "20px" }}>
       <h1>Scanner</h1>
 
       {loading && <p>Loading camera...</p>}
@@ -94,12 +104,7 @@ const Scanner = ({ setPage }) => {
       ></video>
 
       {/* Invisible canvas */}
-      <canvas
-        ref={canvasRef}
-        width="640"
-        height="480"
-        style={{ display: "none" }}
-      ></canvas>
+      <canvas ref={canvasRef} width="640" height="480" style={{ display: "none" }}></canvas>
 
       {/* SCAN BUTTON */}
       <button
@@ -109,7 +114,7 @@ const Scanner = ({ setPage }) => {
           padding: "12px 25px",
           fontSize: "18px",
           borderRadius: "10px",
-          cursor: "pointer",
+          cursor: scanning ? "not-allowed" : "pointer",
           background: scanning ? "#777" : "#007bff",
           color: "white",
           border: "none",
