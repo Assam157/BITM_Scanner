@@ -8,31 +8,38 @@ const Scanner = ({ setPage }) => {
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
-    // Use back camera on phones, fallback to front camera
-    const constraints = {
-      video: {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        facingMode: { exact: "environment" }, // try back camera
-      },
-    };
+    async function startCamera() {
+      try {
+        // Enumerate all video input devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter((d) => d.kind === "videoinput");
 
-    navigator.mediaDevices
-      .getUserMedia(constraints)
-      .catch(() => {
-        // fallback if back camera not available
-        return navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+        // Try to find a back/rear camera
+        let backCameraId = null;
+        for (let device of videoDevices) {
+          if (device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear")) {
+            backCameraId = device.deviceId;
+            break;
+          }
+        }
+
+        // Get media stream
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: backCameraId
+            ? { deviceId: { exact: backCameraId }, width: { ideal: 640 }, height: { ideal: 480 } }
+            : { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
         });
-      })
-      .then((stream) => {
+
         videoRef.current.srcObject = stream;
         videoRef.current.play();
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
+        console.error("Camera error:", err);
         alert("Camera error: " + err.message);
-      });
+      }
+    }
+
+    startCamera();
   }, []);
 
   // -----------------------------
