@@ -8,14 +8,22 @@ const Scanner = ({ setPage }) => {
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
-    // Start webcam only ONCE
+    // Use back camera on phones, fallback to front camera
+    const constraints = {
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: { exact: "environment" }, // try back camera
+      },
+    };
+
     navigator.mediaDevices
-      .getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: "user",
-        },
+      .getUserMedia(constraints)
+      .catch(() => {
+        // fallback if back camera not available
+        return navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+        });
       })
       .then((stream) => {
         videoRef.current.srcObject = stream;
@@ -57,7 +65,6 @@ const Scanner = ({ setPage }) => {
       if (data.detected === 1) setPage("resistor");
       if (data.detected === 2) setPage("transducer");
       if (data.detected === -1) alert("No object detected. Try again.");
-
     } catch (err) {
       console.error("Error:", err);
       alert("Error sending frame to backend");
@@ -108,3 +115,4 @@ const Scanner = ({ setPage }) => {
 };
 
 export default Scanner;
+
