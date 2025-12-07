@@ -15,7 +15,7 @@ const ResistorPage = ({ setPage }) => {
         <iframe
           width="560"
           height="315"
-          src="https://www.youtube.com/embed/L5mWvZB1T6I"
+          src="https://www.youtube.com/embed/x6jajfprWZo?si=P-VIiHxxySpkRaJ6"
           title="Resistor Basic Explanation"
           allowFullScreen
           className="rounded-lg shadow-lg"
@@ -33,3 +33,4 @@ const ResistorPage = ({ setPage }) => {
 };
 
 export default ResistorPage;
+
