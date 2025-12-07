@@ -60,30 +60,17 @@ const Scanner = ({ setPage }) => {
     startCamera();
   }, []);
 
-  const handleScan = async () => {
-    setScanning(true);
-
+  // ==========================
+  // FUNCTION TO SEND BASE64 TO BACKEND
+  // ==========================
+  const processImage = async (base64Image) => {
     try {
-      const video = videoRef.current;
-
-      // ❗ FIX: Prevent throwing errors before finally block
-      if (!video || video.readyState < 2) {
-        alert("Camera not ready yet. Please wait 1–2 seconds.");
-        return;
-      }
-
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-
-      ctx.drawImage(video, 0, 0, 640, 480);
-      const imageData = canvas.toDataURL("image/png");
-
       const res = await fetch(
         "https://bitm-scanner-backend.onrender.com/detect_frame",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ frame: imageData }),
+          body: JSON.stringify({ frame: base64Image }),
         }
       );
 
@@ -95,7 +82,6 @@ const Scanner = ({ setPage }) => {
       const data = await res.json();
       console.log("Detected:", data.detected);
 
-      // ❗ FIX: NO THROW — just handle gracefully
       if (data.detected === -1) {
         alert("No object detected. Try again.");
         return;
@@ -104,16 +90,58 @@ const Scanner = ({ setPage }) => {
       if (data.detected === 0) setPage("capacitor");
       else if (data.detected === 1) setPage("resistor");
       else if (data.detected === 2) setPage("transducer");
-      else {
-        alert("Unknown detection result.");
+      else alert("Unknown detection result.");
+    } catch (err) {
+      console.error(err);
+      alert("Unexpected error while processing image");
+    }
+  };
+
+  // ==========================
+  // CAMERA SCAN BUTTON
+  // ==========================
+  const handleScan = async () => {
+    setScanning(true);
+
+    try {
+      const video = videoRef.current;
+
+      if (!video || video.readyState < 2) {
+        alert("Camera not ready yet. Please wait 1–2 seconds.");
+        return;
       }
+
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+
+      ctx.drawImage(video, 0, 0, 640, 480);
+
+      const imageData = canvas.toDataURL("image/png");
+
+      await processImage(imageData);
     } catch (err) {
       console.error(err);
       alert("Unexpected scanning error");
     } finally {
-      // ALWAYS runs → scanning NEVER freezes
       setScanning(false);
     }
+  };
+
+  // ==========================
+  // UPLOAD PICTURE BUTTON
+  // ==========================
+  const handleUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const base64Image = reader.result; // full base64 image string
+      processImage(base64Image); // send to backend
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -136,6 +164,7 @@ const Scanner = ({ setPage }) => {
         style={{ display: "none" }}
       ></canvas>
 
+      {/* CAMERA SCAN BUTTON */}
       <button
         onClick={handleScan}
         disabled={scanning}
@@ -147,13 +176,33 @@ const Scanner = ({ setPage }) => {
           background: scanning ? "#777" : "#007bff",
           color: "white",
           border: "none",
+          marginRight: "10px",
         }}
       >
-        {scanning ? "Scanning..." : "Scan Me"}
+        {scanning ? "Scanning..." : "Scan Camera"}
       </button>
+
+      {/* UPLOAD BUTTON */}
+      <label
+        style={{
+          padding: "12px 25px",
+          fontSize: "18px",
+          borderRadius: "10px",
+          background: "#28a745",
+          color: "white",
+          cursor: "pointer",
+        }}
+      >
+        Upload Picture
+        <input
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleUpload}
+        />
+      </label>
     </div>
   );
 };
 
 export default Scanner;
-
