@@ -15,7 +15,7 @@ const CeramicCapacitorPage = ({ setPage }) => {
         <iframe
           width="560"
           height="315"
-          src="https://www.youtube.com/embed/0wXwZ6uYdW4"
+          src="https://www.youtube.com/embed/bPIekcz-Rjk?si=fKpUg4VAFRMjpF16"
           title="Ceramic Capacitor Tutorial"
           allowFullScreen
           className="rounded-lg shadow-lg"
@@ -33,3 +33,4 @@ const CeramicCapacitorPage = ({ setPage }) => {
 };
 
 export default CeramicCapacitorPage;
+
