@@ -55,40 +55,62 @@ const Scanner = ({ setPage }) => {
   // -----------------------------
   // CAPTURE + SEND SINGLE FRAME
   // -----------------------------
-  const handleScan = async () => {
-    setScanning(true);
+   const handleScan = async () => {
+  setScanning(true);
 
+  try {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    // Draw frame onto canvas
-    ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-
-    // Convert to base64
-    const imageData = canvas.toDataURL("image/png");
-
-    try {
-      const res = await fetch("https://bitm-scanner-backend.onrender.com/detect_frame", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ frame: imageData }),
-      });
-
-      const data = await res.json();
-      console.log("Detected:", data.detected);
-
-      // Redirect based on detection
-      if (data.detected === 0) setPage("capacitor");
-      else if (data.detected === 1) setPage("resistor");
-      else if (data.detected === 2) setPage("transducer");
-      else if (data.detected === -1) alert("No object detected. Try again.");
-    } catch (err) {
-      console.error("Error:", err);
-      alert("Error sending frame to backend");
+    // Check if video stream exists
+    if (!videoRef.current || videoRef.current.readyState !== 4) {
+      throw new Error("Camera not ready");
     }
 
+    // Draw current frame
+    ctx.drawImage(videoRef.current, 0, 0, 640, 480);
+
+    const imageData = canvas.toDataURL("image/png");
+
+    const res = await fetch("https://bitm-scanner-backend.onrender.com/detect_frame", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ frame: imageData }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Backend error: " + res.status);
+    }
+
+    const data = await res.json();
+
+    if (typeof data.detected !== "number") {
+      throw new Error("Invalid backend response");
+    }
+
+    console.log("Detected:", data.detected);
+
+    // ===============================
+    //   HANDLE DETECTION RESULTS
+    // ===============================
+
+    if (data.detected === -1) {
+      throw new Error("No object detected. Try again.");
+    }
+
+    if (data.detected === 0) setPage("capacitor");
+    else if (data.detected === 1) setPage("resistor");
+    else if (data.detected === 2) setPage("transducer");
+    else throw new Error("Unknown detected class: " + data.detected);
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Unexpected scanning error");
+  } finally {
+    // ALWAYS stop scanning even if error happens
     setScanning(false);
-  };
+  }
+};
 
   return (
     <div className="scanner-container" style={{ textAlign: "center", padding: "20px" }}>
