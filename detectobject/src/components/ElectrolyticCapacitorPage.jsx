@@ -15,7 +15,7 @@ const ElectrolyticCapacitorPage = ({ setPage }) => {
         <iframe
           width="560"
           height="315"
-          src="https://www.youtube.com/embed/Rh5x6zXeuvo"
+          src="https://www.youtube.com/embed/MAP-VA1m-A4?si=hQAzW26tY09orb2z"
           title="Electrolytic Capacitor Tutorial"
           allowFullScreen
           className="rounded-lg shadow-lg"
@@ -33,3 +33,4 @@ const ElectrolyticCapacitorPage = ({ setPage }) => {
 };
 
 export default ElectrolyticCapacitorPage;
+
