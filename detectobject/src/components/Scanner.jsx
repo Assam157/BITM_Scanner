@@ -3,54 +3,38 @@ import React, { useEffect, useRef, useState } from "react";
 const Scanner = ({ setPage }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
 
-  // ==========================
-  // START CAMERA
-  // ==========================
+  // =========================
+  // Start camera
+  // =========================
   useEffect(() => {
     async function startCamera() {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter((d) => d.kind === "videoinput");
+        const videoDevices = devices.filter(d => d.kind === "videoinput");
 
         let selectedCameraId = null;
 
-        // Prefer rear camera on phones
+        // Prefer rear/back camera on phones
         for (let device of videoDevices) {
-          const label = device.label.toLowerCase();
-          if (label.includes("back") || label.includes("rear")) {
+          if (device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear")) {
             selectedCameraId = device.deviceId;
             break;
           }
         }
 
-        // If no rear camera label, pick any non-front
         if (!selectedCameraId) {
-          const nonFront = videoDevices.find(
-            (d) => !d.label.toLowerCase().includes("front")
-          );
+          const nonFront = videoDevices.find(d => !d.label.toLowerCase().includes("front"));
           selectedCameraId = nonFront ? nonFront.deviceId : null;
         }
 
-        const videoConstraints = selectedCameraId
-          ? {
-              deviceId: { exact: selectedCameraId },
-              width: { ideal: 640 },
-              height: { ideal: 480 },
-            }
-          : {
-              facingMode: "environment",
-              width: { ideal: 640 },
-              height: { ideal: 480 },
-            };
+        const constraints = selectedCameraId
+          ? { video: { deviceId: { exact: selectedCameraId }, width: 640, height: 480 } }
+          : { video: { facingMode: "environment", width: 640, height: 480 } };
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraints,
-        });
-
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
           videoRef.current.play();
@@ -65,62 +49,62 @@ const Scanner = ({ setPage }) => {
     startCamera();
   }, []);
 
-  // ==========================
-  // SEND IMAGE TO BACKEND
-  // ==========================
+  // =========================
+  // Process image from camera/upload
+  // =========================
   const processImage = async (base64Image) => {
     try {
-      const res = await fetch(
-        "https://bitm-scanner-backend.onrender.com/detect_frame",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ frame: base64Image }),
-        }
-      );
+      const res = await fetch("http://127.0.0.1:5001/detect_frame", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ frame: base64Image }),
+      });
 
       if (!res.ok) {
         alert("Backend error: " + res.status);
-        setScanning(false); // FIX
+        setScanning(false);
         return;
       }
 
       const data = await res.json();
 
-      if (
-        data.detected === -1 ||
-        data.detected === undefined ||
-        data.detected === null
-      ) {
-        alert("No object detected. Try again.");
-        setScanning(false); // FIX
+      if (data.detected === -1 || data.detected == null) {
+        alert("No component detected. Try again.");
+        setScanning(false);
         return;
       }
 
-      // PAGE ROUTING
-      if (data.detected === 0) setPage("capacitor");
-      else if (data.detected === 1) setPage("resistor");
-      else if (data.detected === 2) setPage("transducer");
-      else alert("Unknown detection result.");
+      // =========================
+      // Map detected value to page string (match App.js)
+      // =========================
+      switch (data.detected) {
+        case 0: setPage("ceramic"); break;
+        case 1: setPage("diode"); break;
+        case 2: setPage("electrolytic"); break;
+        case 3: setPage("polyester"); break; // optional page
+        case 4: setPage("resistor"); break;
+        case 5: setPage("transistor"); break;
+        default: alert("Unknown detection result: " + data.detected);
+      }
 
-      setScanning(false); // FIX
+      setScanning(false);
     } catch (err) {
       console.error(err);
       alert("Unexpected error while processing image");
-      setScanning(false); // FIX
+      setScanning(false);
     }
   };
 
-  // ==========================
-  // CAMERA SCAN BUTTON
-  // ==========================
+  // =========================
+  // Scan camera frame
+  // =========================
   const handleScan = async () => {
     setScanning(true);
 
     const video = videoRef.current;
     if (!video || video.readyState < 2) {
       alert("Camera not ready yet.");
-      setScanning(false); // FIX
+      setScanning(false);
       return;
     }
 
@@ -135,39 +119,40 @@ const Scanner = ({ setPage }) => {
     } catch (err) {
       console.error(err);
       alert("Unexpected scanning error");
-      setScanning(false); // FIX
+      setScanning(false);
     }
   };
 
-  // ==========================
-  // UPLOAD BUTTON
-  // ==========================
+  // =========================
+  // Upload file
+  // =========================
   const handleUpload = (event) => {
     setScanning(true);
-
     const file = event.target.files[0];
     if (!file) {
-      setScanning(false); // FIX
+      setScanning(false);
       return;
     }
 
     const reader = new FileReader();
-
-    reader.onloadend = () => {
-      const base64Image = reader.result;
-      processImage(base64Image);
+    reader.onloadend = async () => {
+      try {
+        await processImage(reader.result);
+      } catch (err) {
+        console.error(err);
+        setScanning(false);
+        alert("Error processing uploaded image");
+      }
     };
-
     reader.readAsDataURL(file);
   };
 
-  // ==========================
-  // RENDER UI
-  // ==========================
+  // =========================
+  // Render
+  // =========================
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
       <h1>Scanner</h1>
-
       {loading && <p>Loading camera...</p>}
 
       <video
@@ -175,16 +160,11 @@ const Scanner = ({ setPage }) => {
         width="640"
         height="480"
         style={{ borderRadius: "10px", marginBottom: "20px" }}
-      ></video>
+      />
 
-      <canvas
-        ref={canvasRef}
-        width="640"
-        height="480"
-        style={{ display: "none" }}
-      ></canvas>
+      <canvas ref={canvasRef} width="640" height="480" style={{ display: "none" }} />
 
-      {/* SCAN BUTTON */}
+      {/* Scan Button */}
       <button
         onClick={handleScan}
         disabled={scanning}
@@ -202,7 +182,7 @@ const Scanner = ({ setPage }) => {
         {scanning ? "Scanning..." : "Scan Camera"}
       </button>
 
-      {/* UPLOAD BUTTON */}
+      {/* Upload Button */}
       <label
         style={{
           padding: "12px 25px",
@@ -210,7 +190,7 @@ const Scanner = ({ setPage }) => {
           borderRadius: "10px",
           background: "#28a745",
           color: "white",
-          cursor: "pointer",
+          cursor: scanning ? "not-allowed" : "pointer",
         }}
       >
         Upload Picture
@@ -219,6 +199,7 @@ const Scanner = ({ setPage }) => {
           accept="image/*"
           style={{ display: "none" }}
           onChange={handleUpload}
+          disabled={scanning}
         />
       </label>
     </div>
