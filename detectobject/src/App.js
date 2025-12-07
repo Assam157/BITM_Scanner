@@ -1,28 +1,37 @@
 import React, { useState } from "react";
+
+// Import your pages/components
 import Scanner from "./components/Scanner";
-import Transducer from "./components/Transducer";
-import Capacitor from "./components/Capacitor";
-import Resistor from "./components/Resistor";
+import CeramicCapacitorPage from "./components/CeramicCapacitorPage";
+import ElectrolyticCapacitorPage from "./components/ElectrolyticCapacitorPage";
+import DiodePage from "./components/DiodePage";
+import ResistorPage from "./components/ResistorPage.jsx";
+import TransistorPage from "./components/TransistorPage";
+
 import "./App.css";
 
 function App() {
-  const [page, setPage] = useState("scanner");
+  const [page, setPage] = useState("scanner"); // default page
 
   return (
     <div className="App">
 
-      {/* Page Selectors */}
+      {/* Conditional rendering of pages */}
       {page === "scanner" && <Scanner setPage={setPage} />}
-      {page === "transducer" && <Transducer />}
-      {page === "capacitor" && <Capacitor />}
-      {page === "resistor" && <Resistor />}
+      {page === "ceramic" && <CeramicCapacitorPage setPage={setPage} />}
+      {page === "electrolytic" && <ElectrolyticCapacitorPage setPage={setPage} />}
+      {page === "diode" && <DiodePage setPage={setPage} />}
+      {page === "resistor" && <ResistorPage setPage={setPage} />}
+      {page === "transistor" && <TransistorPage setPage={setPage} />}
 
-      {/* Manual Navigation Buttons (optional) */}
+      {/* Optional Manual Navigation Buttons */}
       <div style={{ marginTop: "20px" }}>
         <button onClick={() => setPage("scanner")}>Scanner</button>
-        <button onClick={() => setPage("transducer")}>Transducer</button>
-        <button onClick={() => setPage("capacitor")}>Capacitor</button>
+        <button onClick={() => setPage("ceramic")}>Ceramic Capacitor</button>
+        <button onClick={() => setPage("electrolytic")}>Electrolytic Capacitor</button>
+        <button onClick={() => setPage("diode")}>Diode</button>
         <button onClick={() => setPage("resistor")}>Resistor</button>
+        <button onClick={() => setPage("transistor")}>Transistor</button>
       </div>
 
     </div>
@@ -30,3 +39,4 @@ function App() {
 }
 
 export default App;
+
