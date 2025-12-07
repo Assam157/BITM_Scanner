@@ -23,7 +23,7 @@ const Transistor = () => {
         <iframe
           width="560"
           height="315"
-          src="https://www.youtube.com/embed/1yQjC3s9Xz0"
+          src="https://www.youtube.com/embed/J4oO7PT_nzQ?si=1mXcdAeN7kbaihqv"
           title="Transistor Tutorial"
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -36,3 +36,4 @@ const Transistor = () => {
 };
 
 export default Transistor;
+
