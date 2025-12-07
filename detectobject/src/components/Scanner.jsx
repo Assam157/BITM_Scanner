@@ -68,7 +68,7 @@ const Scanner = ({ setPage }) => {
     const imageData = canvas.toDataURL("image/png");
 
     try {
-      const res = await fetch("http://127.0.0.1:5001/detect_frame", {
+      const res = await fetch("https://bitm-scanner-backend.onrender.com/detect_frame", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ frame: imageData }),
