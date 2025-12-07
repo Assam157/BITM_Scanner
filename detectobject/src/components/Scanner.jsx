@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 
+// =========================
+// CONFIG
+// =========================
+const BACKEND_URL = "http://192.168.1.35:5001"; // PC LAN IP of your Flask backend
+
 const Scanner = ({ setPage }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -54,7 +59,9 @@ const Scanner = ({ setPage }) => {
   // =========================
   const processImage = async (base64Image) => {
     try {
-      const res = await fetch("https://bitm-scanner-backend.onrender.com/detect_frame", {
+      setScanning(true);
+
+      const res = await fetch(`${BACKEND_URL}/detect_frame`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ frame: base64Image }),
@@ -74,9 +81,7 @@ const Scanner = ({ setPage }) => {
         return;
       }
 
-      // =========================
       // Map detected value to page string (match App.js)
-      // =========================
       switch (data.detected) {
         case 0: setPage("ceramic"); break;
         case 1: setPage("diode"); break;
@@ -99,27 +104,21 @@ const Scanner = ({ setPage }) => {
   // Scan camera frame
   // =========================
   const handleScan = async () => {
-    setScanning(true);
-
     const video = videoRef.current;
     if (!video || video.readyState < 2) {
       alert("Camera not ready yet.");
-      setScanning(false);
       return;
     }
 
     try {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-
       ctx.drawImage(video, 0, 0, 640, 480);
       const imageData = canvas.toDataURL("image/png");
-
       await processImage(imageData);
     } catch (err) {
       console.error(err);
       alert("Unexpected scanning error");
-      setScanning(false);
     }
   };
 
@@ -127,12 +126,8 @@ const Scanner = ({ setPage }) => {
   // Upload file
   // =========================
   const handleUpload = (event) => {
-    setScanning(true);
     const file = event.target.files[0];
-    if (!file) {
-      setScanning(false);
-      return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onloadend = async () => {
@@ -140,7 +135,6 @@ const Scanner = ({ setPage }) => {
         await processImage(reader.result);
       } catch (err) {
         console.error(err);
-        setScanning(false);
         alert("Error processing uploaded image");
       }
     };
@@ -167,7 +161,7 @@ const Scanner = ({ setPage }) => {
       {/* Scan Button */}
       <button
         onClick={handleScan}
-        disabled={scanning}
+        disabled={scanning || loading}
         style={{
           padding: "12px 25px",
           fontSize: "18px",
@@ -199,7 +193,7 @@ const Scanner = ({ setPage }) => {
           accept="image/*"
           style={{ display: "none" }}
           onChange={handleUpload}
-          disabled={scanning}
+          disabled={scanning || loading}
         />
       </label>
     </div>
@@ -207,4 +201,3 @@ const Scanner = ({ setPage }) => {
 };
 
 export default Scanner;
-
