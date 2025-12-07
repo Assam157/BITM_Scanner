@@ -15,7 +15,7 @@ const DiodePage = ({ setPage }) => {
         <iframe
           width="560"
           height="315"
-          src="https://www.youtube.com/embed/y5L3p2BIu8A"
+          src="https://www.youtube.com/embed/Fwj_d3uO5g8?si=xgzD48ZTDVfB2MDl"
           title="Diode Explained"
           allowFullScreen
           className="rounded-lg shadow-lg"
@@ -33,3 +33,4 @@ const DiodePage = ({ setPage }) => {
 };
 
 export default DiodePage;
+
