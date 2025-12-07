@@ -7,6 +7,9 @@ const Scanner = ({ setPage }) => {
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
 
+  // ==========================
+  // START CAMERA
+  // ==========================
   useEffect(() => {
     async function startCamera() {
       try {
@@ -15,6 +18,7 @@ const Scanner = ({ setPage }) => {
 
         let selectedCameraId = null;
 
+        // Prefer rear camera on phones
         for (let device of videoDevices) {
           const label = device.label.toLowerCase();
           if (label.includes("back") || label.includes("rear")) {
@@ -23,6 +27,7 @@ const Scanner = ({ setPage }) => {
           }
         }
 
+        // If no rear camera label, pick any non-front
         if (!selectedCameraId) {
           const nonFront = videoDevices.find(
             (d) => !d.label.toLowerCase().includes("front")
@@ -61,7 +66,7 @@ const Scanner = ({ setPage }) => {
   }, []);
 
   // ==========================
-  // FUNCTION TO SEND BASE64 TO BACKEND
+  // SEND IMAGE TO BACKEND
   // ==========================
   const processImage = async (base64Image) => {
     try {
@@ -76,24 +81,33 @@ const Scanner = ({ setPage }) => {
 
       if (!res.ok) {
         alert("Backend error: " + res.status);
+        setScanning(false); // FIX
         return;
       }
 
       const data = await res.json();
-      console.log("Detected:", data.detected);
 
-      if (data.detected === -1) {
+      if (
+        data.detected === -1 ||
+        data.detected === undefined ||
+        data.detected === null
+      ) {
         alert("No object detected. Try again.");
+        setScanning(false); // FIX
         return;
       }
 
+      // PAGE ROUTING
       if (data.detected === 0) setPage("capacitor");
       else if (data.detected === 1) setPage("resistor");
       else if (data.detected === 2) setPage("transducer");
       else alert("Unknown detection result.");
+
+      setScanning(false); // FIX
     } catch (err) {
       console.error(err);
       alert("Unexpected error while processing image");
+      setScanning(false); // FIX
     }
   };
 
@@ -103,47 +117,53 @@ const Scanner = ({ setPage }) => {
   const handleScan = async () => {
     setScanning(true);
 
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) {
+      alert("Camera not ready yet.");
+      setScanning(false); // FIX
+      return;
+    }
+
     try {
-      const video = videoRef.current;
-
-      if (!video || video.readyState < 2) {
-        alert("Camera not ready yet. Please wait 1–2 seconds.");
-        return;
-      }
-
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
 
       ctx.drawImage(video, 0, 0, 640, 480);
-
       const imageData = canvas.toDataURL("image/png");
 
       await processImage(imageData);
     } catch (err) {
       console.error(err);
       alert("Unexpected scanning error");
-    } finally {
-      setScanning(false);
+      setScanning(false); // FIX
     }
   };
 
   // ==========================
-  // UPLOAD PICTURE BUTTON
+  // UPLOAD BUTTON
   // ==========================
   const handleUpload = (event) => {
+    setScanning(true);
+
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+      setScanning(false); // FIX
+      return;
+    }
 
     const reader = new FileReader();
 
     reader.onloadend = () => {
-      const base64Image = reader.result; // full base64 image string
-      processImage(base64Image); // send to backend
+      const base64Image = reader.result;
+      processImage(base64Image);
     };
 
     reader.readAsDataURL(file);
   };
 
+  // ==========================
+  // RENDER UI
+  // ==========================
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
       <h1>Scanner</h1>
@@ -164,7 +184,7 @@ const Scanner = ({ setPage }) => {
         style={{ display: "none" }}
       ></canvas>
 
-      {/* CAMERA SCAN BUTTON */}
+      {/* SCAN BUTTON */}
       <button
         onClick={handleScan}
         disabled={scanning}
@@ -206,3 +226,4 @@ const Scanner = ({ setPage }) => {
 };
 
 export default Scanner;
+
