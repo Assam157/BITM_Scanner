@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 // =========================
 // CONFIG
 // =========================
-const BACKEND_URL = "http://192.168.1.35:5001"; // PC LAN IP of your Flask backend
+const BACKEND_URL = "https://bitm-backend.onrender.com"; // PC LAN IP of your Flask backend
 
 const Scanner = ({ setPage }) => {
   const videoRef = useRef(null);
