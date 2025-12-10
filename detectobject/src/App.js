@@ -7,6 +7,7 @@ import ElectrolyticCapacitorPage from "./components/ElectrolyticCapacitorPage";
 import DiodePage from "./components/DiodePage";
 import ResistorPage from "./components/ResistorPage.jsx";
 import TransistorPage from "./components/TransistorPage";
+import NoDetectionPage from "./components/NoDetectionPage";
 
 import "./App.css";
 
@@ -23,6 +24,7 @@ function App() {
       {page === "diode" && <DiodePage setPage={setPage} />}
       {page === "resistor" && <ResistorPage setPage={setPage} />}
       {page === "transistor" && <TransistorPage setPage={setPage} />}
+      {page === "none" && <NoDetectionPage setPage={setPage} />}
 
       {/* Optional Manual Navigation Buttons */}
       <div style={{ marginTop: "20px" }}>
@@ -39,4 +41,3 @@ function App() {
 }
 
 export default App;
-
