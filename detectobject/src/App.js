@@ -24,7 +24,7 @@ function App() {
       {page === "diode" && <DiodePage setPage={setPage} />}
       {page === "resistor" && <ResistorPage setPage={setPage} />}
       {page === "transistor" && <TransistorPage setPage={setPage} />}
-      {page === "none" && <NoDetectionPage setPage={setPage} />}
+      {page === "" && <NoDetectionPage setPage={setPage} />}
 
       {/* Optional Manual Navigation Buttons */}
       <div style={{ marginTop: "20px" }}>
